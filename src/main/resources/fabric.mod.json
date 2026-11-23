@@ -1,0 +1,26 @@
+{
+	"schemaVersion": 1,
+	"id": "paletteunifier",
+	"version": "${version}",
+	"name": "Palette Unifier",
+	"description": "Recolors every mod's oak, spruce, birch (and the other vanilla wood types) to match the wood textures of your active resource pack, so furniture and decoration blocks from different mods finally look like the same wood.",
+	"authors": ["Koray Kaya"],
+	"license": "MIT",
+	"icon": "assets/paletteunifier/icon.png",
+	"environment": "client",
+	"entrypoints": {
+		"client": ["com.koraykaya.paletteunifier.PaletteUnifierClient"],
+		"modmenu": ["com.koraykaya.paletteunifier.gui.ModMenuIntegration"]
+	},
+	"depends": {
+		"fabricloader": ">=0.14.0",
+		"fabric-api": "*",
+		"minecraft": "~1.20.1",
+		"java": ">=17",
+		"moonlight": ">=1.20-2.16.26"
+	},
+	"suggests": {
+		"modmenu": "*",
+		"cloth-config": "*"
+	}
+}

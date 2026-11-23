@@ -1,0 +1,90 @@
+plugins {
+	id 'fabric-loom' version '1.8-SNAPSHOT'
+	id 'com.modrinth.minotaur' version '2.+'
+}
+
+version = project.mod_version
+group = project.maven_group
+
+base {
+	archivesName = project.archives_base_name
+}
+
+repositories {
+	mavenCentral()
+	exclusiveContent {
+		forRepository { maven { name = "Modrinth"; url = "https://api.modrinth.com/maven" } }
+		filter { includeGroup "maven.modrinth" }
+	}
+}
+
+dependencies {
+	minecraft "com.mojang:minecraft:${project.minecraft_version}"
+	mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
+	modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
+	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
+
+	// Moonlight Lib (required at runtime): dynamic texture pack + palette API. Pinned by Modrinth version id.
+	modCompileOnly "maven.modrinth:moonlight:UUgCUgCp"   // 1.20-2.16.36-fabric
+	modLocalRuntime "maven.modrinth:moonlight:UUgCUgCp"
+
+	// Optional in-game settings screen: Mod Menu + Cloth Config.
+	modCompileOnly "maven.modrinth:cloth-config:2xQdCMyG"
+	modLocalRuntime "maven.modrinth:cloth-config:2xQdCMyG"
+	modCompileOnly "maven.modrinth:modmenu:lEkperf6"
+	modLocalRuntime "maven.modrinth:modmenu:lEkperf6"
+
+	// Local test content for runClient only: drop any mod jars (and their nested library jars) into
+	// libs/ and libs/nested/. The folder is git-ignored and nothing in it is shipped.
+	modLocalRuntime fileTree(dir: "libs", include: "*.jar")
+	modLocalRuntime fileTree(dir: "libs/nested", include: "*.jar")
+}
+
+processResources {
+	inputs.property "version", project.version
+	filesMatching("fabric.mod.json") {
+		expand "version": project.version
+	}
+}
+
+tasks.withType(JavaCompile).configureEach {
+	it.options.release = 17
+}
+
+java {
+	withSourcesJar()
+	sourceCompatibility = JavaVersion.VERSION_17
+	targetCompatibility = JavaVersion.VERSION_17
+}
+
+jar {
+	from("LICENSE") { rename { "${it}_${project.base.archivesName.get()}" } }
+}
+
+// ---------------------------------------------------------------- Modrinth
+// Publish with:  MODRINTH_TOKEN=... ./gradlew modrinth
+// Sync the project page (MODRINTH.md) with:  ./gradlew modrinthSyncBody
+modrinth {
+	token = project.provider {
+		def t = System.getenv('MODRINTH_TOKEN')
+		if (t == null) throw new GradleException("MODRINTH_TOKEN is not set")
+		return t
+	}
+	projectId = project.modrinth_id
+	versionNumber = project.mod_version
+	versionName = "Palette Unifier ${project.mod_version.split('\\+')[0]}"
+	versionType = project.modrinth_release_type
+	uploadFile = remapJar
+	additionalFiles = [remapSourcesJar]
+	gameVersions = [project.minecraft_version]
+	loaders = ['fabric']
+	changelog = file('CHANGELOG.md').exists() ? file('CHANGELOG.md').getText('UTF-8').split('\n## ').drop(1).first().with { '## ' + it } : ''
+	syncBodyFrom = file('MODRINTH.md').exists() ? file('MODRINTH.md').getText('UTF-8') : ''
+	dependencies {
+		required.project 'moonlight'
+		required.project 'fabric-api'
+		optional.project 'modmenu'
+		optional.project 'cloth-config'
+	}
+}
+tasks.modrinth.dependsOn(tasks.build)
